@@ -19,7 +19,7 @@ dependencies = [
 homepage = "https://github.com/seballgeyer/LC29H_python"
 
 [project.scripts]
-your_command = "lc29h/script/get_stream:main"
+get_stream = "lc29h.script.get_stream:get_stream"
 
 [tool.setuptools_scm]
 version_scheme = "post-release"
