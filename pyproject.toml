@@ -4,6 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "lc29h"
+dynamic = ["version"]
 description = "use of the LC29H GPS module on a Raspberry Pi"
 authors = [
     { name = "Sébastien Allgeyer", email = "sebastien.allgeyer@gmail.com" }
@@ -18,8 +19,9 @@ dependencies = [
 homepage = "https://github.com/seballgeyer/LC29H_python"
 
 [project.scripts]
-your_command = "your_package.get_stream:main"
+your_command = "lc29h/script/get_stream:main"
 
 [tool.setuptools_scm]
 version_scheme = "post-release"
 local_scheme = "dirty-tag"
+version_file = "lc29h/__version__.py"
