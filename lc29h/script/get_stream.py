@@ -78,7 +78,7 @@ class SerialComm:
 
 def send_initial_commands(comm: SerialComm, commands: list):
     for command in commands:
-        command_str = command.decode().strip()
+        command_str = command.strip()
         chksum = compute_checksum(command_str)
         command_str += f"*{chksum}\r\n"
         print(f"Sending command: {command_str}")
