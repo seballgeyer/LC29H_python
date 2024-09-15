@@ -4,3 +4,4 @@
 *swp
 **/__pycache__/
 *.egg-info/
+lc29h/__version__.py
