@@ -75,7 +75,7 @@ class SerialComm:
 
 def send_initial_commands(comm: SerialComm):
     commands = [
-        b"$PAIR432,1",
+        b"$PAIR432,1\n",
     ]
     for command in commands:
         chksum = compute_checksum(command)
