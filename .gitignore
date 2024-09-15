@@ -1,5 +1,6 @@
 .devenv/
 .venv/
+.build/
 *swp
 **/__pycache__/
 *.egg-info/

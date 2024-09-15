@@ -1,111 +1,104 @@
 import time
-import threading
 import serial
+import threading
+from queue import Queue
+
+from lc29h.utils.checksum import calculate_checksum
 
 
-def get_stream():
-    stream = serial.Serial("/dev/ttyAMA0", 115200, timeout=3)
+class SerialComm:
+    def __init__(self, port="/dev/ttyAMA0", baudrate=115200, timeout=3):
+        self.stream = serial.Serial(port, baudrate, timeout=timeout)
+        self.data_queue = Queue()
+        self.file_path = "output_data.bin"
+        self.running = True
 
-    data = "Initial data"
-    buffer = 50
-    # while data:
-    #     try:
-    print("-")
-    # data=self.socket.recv(buffer)
-    # # self.out.buffer.write(data)
-    query = b"$PAIR432,1*22\r\n"
-    print("send:", query)
-    stream.write(query)
-    query = b"$PAIR062,-1,0*12\r\n"
-    diseable = [
-        b"$PAIR062,0,0*3E\r\n",
-        b"$PAIR062,1,0*3F\r\n",
-        b"$PAIR062,2,0*3C\r\n",
-        b"$PAIR062,3,0*3D\r\n",
-        b"$PAIR062,4,0*3A\r\n",
-        b"$PAIR062,5,0*3B\r\n",
-        b"$PAIR062,6,0*38\r\n",
-        b"$PAIR062,7,0*39\r\n",
-        b"$PAIR062,8,0*36\r\n",
+    def send_command(self, command: bytes):
+        print(f"Sending: {command}")
+        self.stream.write(command)
+        time.sleep(1)  # Adjust sleep time as needed
+        return self.receive_ack(command)
+
+    def receive_ack(self, command: bytes):
+        command_id = command.split(b",")[0][1:]  # Extract command ID from the command
+        while False:
+            # TODO: implement the answer not only ack
+            ack = self.stream.read_until(b"\r\n")
+            print(f"Received: {ack}")
+            if ack.startswith(b"$PAIR001"):
+                parts = ack.split(b",")
+                if len(parts) >= 3 and parts[1] == command_id:
+                    result = int(parts[2].split(b"*")[0])
+                    return result
+            time.sleep(0.1)  # Sleep briefly before checking again
+
+    def read_stream(self, time_limit=None):
+        start_time = time.time()
+        while self.running:
+            if time_limit and (time.time() - start_time) > time_limit:
+                print("Time limit reached. Stopping the stream reading.")
+                self.running = False
+                break
+            if self.stream.in_waiting > 0:
+                data = self.stream.read(64)  # Read a fixed number of bytes (e.g., 64 bytes)
+                self.data_queue.put(data)
+
+    def process_data(self):
+        with open(self.file_path, "wb") as binary_file:
+            while self.running:
+                try:
+                    data = self.data_queue.get()
+                    binary_file.write(data)  # Write the binary data to file
+                    binary_file.flush()  # Ensure data is written immediately
+                    print(data)
+                    # Uncomment and adjust the following lines if RTCMReader is available
+                    # try:
+                    #     msg = RTCMReader.parse(data, validate=1)
+                    #     print(msg)
+                    # except Exception as e:
+                    #     msg = RTCMReader.parse(data, validate=0)
+                    #     print("*", e)
+                    #     print(msg)
+                    #     print("===")
+                except Exception as e:
+                    print(f"Error writing to file: {e}")
+
+    def start(self, time_limit=None):
+        self.running = True
+        threading.Thread(target=self.process_data, daemon=True).start()
+        self.read_stream(time_limit)
+
+    def stop(self):
+        self.running = False
+        self.stream.close()
+
+
+def send_initial_commands(comm: SerialComm):
+    commands = [
+        b"$PAIR432,1",
     ]
-    for i in diseable:
-        print(i)
-        stream.write(i)
-        time.sleep(1)
-    query = b"$PAIR066,1,0,0,0,0,0*3B\r\n"
-    stream.write(query)
-    # d = stream.readlines()
-    # print(d)
-    # query = b"$PAIR432,0*22\r\n"
-    # print('send:', query)
-    # stream.write(query)
-    # d = stream.readlines()
-    # print(d)
-    # while True:
-    #     received_data = stream.read()              #read serial port
-    #     # time.sleep(0.03)
-    #     data_left = stream.inWaiting()             #check for remaining byte
-    #     received_data += stream.read(data_left)
-    #     print (received_data)                   #print received data
-    #     print("\n")
-    # ser.write(received_data)
-    # (raw_data, parsed_data) = nmr.read()
-    # print(raw_data)
-    # if bytes("GNGGA",'ascii') in raw_data :
-    #     print(raw_data)
-    stream.close()
+    for command in commands:
+        chksum = calculate_checksum(command)
+        command += f"*{chksum}\r\n".encode()
+        print(f"Sending command: {command}")
+        result = comm.send_command(command)
+        if result == 0:
+            print(f"Command {command} executed successfully.")
+        elif result == 1:
+            print(f"Command {command} is waiting for process.")
+        else:
+            print(f"Command {command} failed with result code {result}.")
 
-    # Function to handle decoding and printing in a separate thread
-    def process_data(data_queue, file_path):
-        with open(file_path, "wb") as binary_file:
-            while True:
-                if not data_queue.empty():
-                    try:
-                        data = data_queue.get()
-                        binary_file.write(data)  # Write the binary data to file
-                        binary_file.flush()  # Ensure data is written immediately
-                        print(data)
-                        # try:
-                        #     msg = RTCMReader.parse(data, validate=1)
-                        #     print(msg)
-                        # except Exception as e:
-                        #     msg = RTCMReader.parse(data, validate=0)
-                        #     print("*", e)
-                        #     print(msg)
-                        #     print("===")
 
-                    except Exception as e:
-                        print(f"Error writing to file: {e}")
-                        pass
-
-    # Initialize the serial connection
-    ser = serial.Serial("/dev/ttyAMA0", baudrate=115200, timeout=3)
-
-    # Use a queue to pass data between threads
-    from queue import Queue
-
-    data_queue = Queue()
-
-    # Start a separate thread for decoding and printing
-    file_path = "output_data.bin"  # Path to the binary file
-    thread = threading.Thread(target=process_data, args=(data_queue, file_path))
-    thread.daemon = True
-    thread.start()
-    if 0 == 1:
-        while True:
-            if ser.in_waiting > 0:
-                data = ser.read(ser.in_waiting)  # Read all available data
-                data_queue.put(data)  # Put the data into the queue for processing
-
-    while True:
-        if ser.in_waiting > 0:
-            data = ser.read(64)  # Read a fixed number of bytes (e.g., 64 bytes)
-            data_queue.put(data)
-
-    exit(0)
-    # except:
-    #     pass
+def main():
+    comm = SerialComm()
+    try:
+        send_initial_commands(comm)
+        # Start the communication with a time limit of 1 hour (3600 seconds)
+        comm.start(time_limit=3600)
+    except KeyboardInterrupt:
+        comm.stop()
 
 
 if __name__ == "__main__":
-    get_stream()
+    main()
