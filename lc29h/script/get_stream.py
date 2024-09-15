@@ -11,6 +11,11 @@ from lc29h.utils.checksum import compute_checksum
 
 logger = logging.getLogger(__name__)
 logger.setLevel(logging.INFO)
+file_handler = logging.FileHandler("stream.log")
+file_handler.setLevel(logging.INFO)
+formatter = logging.Formatter("%(asctime)s - %(levelname)s - %(message)s")
+file_handler.setFormatter(formatter)
+logger.addHandler(file_handler)
 
 
 class SerialComm:
@@ -77,7 +82,7 @@ class SerialComm:
                     #     print(msg)
                     #     print("===")
                 except Exception as e:
-                    print(f"Error writing to file: {e}")
+                    logger.exception(f"Error writing to file: {e}")
 
     def start(self, time_limit=None):
         self.running = True
