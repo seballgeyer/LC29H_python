@@ -76,6 +76,7 @@ class SerialComm:
 def send_initial_commands(comm: SerialComm):
     commands = [
         b"$PAIR432,1\n",
+        b"$PAIR830,2\n",
     ]
     for command in commands:
         command_str = command.decode().strip()
