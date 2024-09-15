@@ -40,7 +40,7 @@ class SerialComm:
                 self.running = False
                 break
             if self.stream.in_waiting > 0:
-                data = self.stream.read(64)  # Read a fixed number of bytes (e.g., 64 bytes)
+                data = self.stream.read(self.stream.in_waiting)  # Read a fixed number of bytes (e.g., 64 bytes)
                 self.data_queue.put(data)
 
     def process_data(self):
