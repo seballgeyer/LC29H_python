@@ -24,6 +24,7 @@ class SerialComm:
 
     def receive_ack(self, command: bytes):
         command_id = command.split(b",")[0][1:]  # Extract command ID from the command
+        return 0
         while False:
             # TODO: implement the answer not only ack
             ack = self.stream.read_until(b"\r\n")
