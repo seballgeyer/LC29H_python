@@ -3,7 +3,7 @@ import serial
 import threading
 from queue import Queue
 
-from lc29h.utils.checksum import calculate_checksum
+from lc29h.utils.checksum import compute_checksum
 
 
 class SerialComm:
