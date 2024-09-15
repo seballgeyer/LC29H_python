@@ -23,5 +23,4 @@ get_stream = "lc29h.script.get_stream:main"
 
 [tool.setuptools_scm]
 version_scheme = "post-release"
-local_scheme = "dirty-tag"
 version_file = "lc29h/__version__.py"
