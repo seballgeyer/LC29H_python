@@ -11,8 +11,7 @@ authors = [
 ]
 dependencies = [
     "pyserial",
-    "pynmeagps",
-    "pyrtcm"
+    "pyyaml",
 ]
 
 [project.urls]

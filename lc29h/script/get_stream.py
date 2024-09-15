@@ -2,6 +2,9 @@ import time
 import serial
 import threading
 from queue import Queue
+import sys
+
+import yaml
 
 from lc29h.utils.checksum import compute_checksum
 
@@ -73,11 +76,7 @@ class SerialComm:
         self.stream.close()
 
 
-def send_initial_commands(comm: SerialComm):
-    commands = [
-        b"$PAIR432,1\n",
-        b"$PAIR830,2\n",
-    ]
+def send_initial_commands(comm: SerialComm, commands: list):
     for command in commands:
         command_str = command.decode().strip()
         chksum = compute_checksum(command_str)
@@ -92,11 +91,20 @@ def send_initial_commands(comm: SerialComm):
             print(f"Command {command} failed with result code {result}.")
 
 
+def read_options():
+    # Read the options from the command line (yaml file)
+    options = {}
+    with open(sys.argv[1], "r") as file:
+        options = yaml.load(file, Loader=yaml.FullLoader)
+    return options
+
+
 def main():
+    # read the options from the command line (yaml file)
+    opt = read_options()
     comm = SerialComm()
     try:
-        send_initial_commands(comm)
-        # Start the communication with a time limit of 1 hour (3600 seconds)
+        send_initial_commands(comm, opt["config"])
         comm.start(time_limit=3600)
     except KeyboardInterrupt:
         comm.stop()
