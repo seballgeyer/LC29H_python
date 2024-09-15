@@ -78,7 +78,7 @@ def send_initial_commands(comm: SerialComm):
         b"$PAIR432,1",
     ]
     for command in commands:
-        chksum = calculate_checksum(command)
+        chksum = compute_checksum(command)
         command += f"*{chksum}\r\n".encode()
         print(f"Sending command: {command}")
         result = comm.send_command(command)
