@@ -13,8 +13,16 @@ class SerialComm:
     def __init__(self, port="/dev/ttyAMA0", baudrate=115200, timeout=3):
         self.stream = serial.Serial(port, baudrate, timeout=timeout)
         self.data_queue = Queue()
-        self.file_path = "output_data.bin"
+        self._file_path = "output_data.bin"
         self.running = True
+
+    @property
+    def file_path(self):
+        return self._file_path
+
+    @file_path.setter
+    def file_path(self, path):
+        self._file_path = path
 
     def send_command(self, command: bytes):
         print(f"Sending: {command}")
@@ -48,13 +56,13 @@ class SerialComm:
                 self.data_queue.put(data)
 
     def process_data(self):
-        with open(self.file_path, "wb") as binary_file:
+        with open(self._file_path, "wb") as binary_file:
             while self.running:
                 try:
                     data = self.data_queue.get()
                     binary_file.write(data)  # Write the binary data to file
                     binary_file.flush()  # Ensure data is written immediately
-                    print(data)
+                    # print(data)
                     # Uncomment and adjust the following lines if RTCMReader is available
                     # try:
                     #     msg = RTCMReader.parse(data, validate=1)
@@ -77,23 +85,23 @@ class SerialComm:
         self.stream.close()
 
 
-def send_initial_commands(comm: SerialComm, commands: list):
-    for command in commands:
-        command_str = command.strip()
-        chksum = compute_checksum(command_str)
-        command_str += f"*{chksum}\r\n"
-        print(f"Sending command: {command_str}")
-        result = comm.send_command(command_str.encode())
-        if result == 0:
-            print(f"Command {command} executed successfully.")
-        elif result == 1:
-            print(f"Command {command} is waiting for process.")
-        else:
-            print(f"Command {command} failed with result code {result}.")
+def send_initial_commands(comm: SerialComm, commands: list = None):
+    if commands is not None:
+        for command in commands:
+            command_str = command.strip()
+            chksum = compute_checksum(command_str)
+            command_str += f"*{chksum}\r\n"
+            print(f"Sending command: {command_str}")
+            result = comm.send_command(command_str.encode())
+            if result == 0:
+                print(f"Command {command} executed successfully.")
+            elif result == 1:
+                print(f"Command {command} is waiting for process.")
+            else:
+                print(f"Command {command} failed with result code {result}.")
 
 
 def read_options():
-    # Read the options from the command line (yaml file)
     options = {}
     with open(sys.argv[1], "r") as file:
         options = yaml.load(file, Loader=yaml.FullLoader)
@@ -101,12 +109,14 @@ def read_options():
 
 
 def main():
-    # read the options from the command line (yaml file)
     opt = read_options()
     comm = SerialComm()
+    if opt["record"]["file_path"]:
+        comm.file_path = opt["record"]["file_path"]
+
     try:
         send_initial_commands(comm, opt["config"])
-        comm.start(time_limit=3600)
+        comm.start(time_limit=opt["record"]["time_limit"])
     except KeyboardInterrupt:
         comm.stop()
 
