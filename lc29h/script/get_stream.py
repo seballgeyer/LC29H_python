@@ -78,10 +78,11 @@ def send_initial_commands(comm: SerialComm):
         b"$PAIR432,1\n",
     ]
     for command in commands:
-        chksum = compute_checksum(command)
-        command += f"*{chksum}\r\n".encode()
-        print(f"Sending command: {command}")
-        result = comm.send_command(command)
+        command_str = command.decode().strip()
+        chksum = compute_checksum(command_str)
+        command_str += f"*{chksum}\r\n"
+        print(f"Sending command: {command_str}")
+        result = comm.send_command(command_str.encode())
         if result == 0:
             print(f"Command {command} executed successfully.")
         elif result == 1:
