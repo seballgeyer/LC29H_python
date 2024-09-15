@@ -3,10 +3,14 @@ import serial
 import threading
 from queue import Queue
 import sys
+import logging
 
 import yaml
 
 from lc29h.utils.checksum import compute_checksum
+
+logger = logging.getLogger(__name__)
+logger.setLevel(logging.INFO)
 
 
 class SerialComm:
@@ -48,7 +52,7 @@ class SerialComm:
         start_time = time.time()
         while self.running:
             if time_limit and (time.time() - start_time) > time_limit:
-                print("Time limit reached. Stopping the stream reading.")
+                logger.info("Time limit reached. Stopping the stream reading.")
                 self.running = False
                 break
             if self.stream.in_waiting > 0:
@@ -91,14 +95,16 @@ def send_initial_commands(comm: SerialComm, commands: list = None):
             command_str = command.strip()
             chksum = compute_checksum(command_str)
             command_str += f"*{chksum}\r\n"
-            print(f"Sending command: {command_str}")
+            logger.info(f"Sending command: {command_str}")
             result = comm.send_command(command_str.encode())
             if result == 0:
-                print(f"Command {command} executed successfully.")
+                logger.info(f"Command {command} executed successfully.")
             elif result == 1:
-                print(f"Command {command} is waiting for process.")
+                logger.warning(f"Command {command} is waiting for process.")
             else:
-                print(f"Command {command} failed with result code {result}.")
+                logger.warning(f"Command {command} failed with result code {result}.")
+        logger.info("All initial commands sent. waiting for 60s")
+        time.sleep(60)
 
 
 def read_options():
